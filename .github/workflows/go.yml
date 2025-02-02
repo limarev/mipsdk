@@ -1,18 +1,22 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Go
+name: Release mipsdk
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      mipsdkbins_url:
+        description: 'url for scraping'
+        required: true
+        default: 'https://aka.ms/mipsdkbins'
 
 jobs:
 
-  build:
+  release:
     runs-on: ubuntu-latest
+    env:
+        build_dir: mipsdkbin
     steps:
     - uses: actions/checkout@v4
 
@@ -22,12 +26,33 @@ jobs:
         go-version: '1.23'
 
     - name: Build
-      run: go build -v
+      run: go build
 
-    - name: Release upload
-      run: gh release upload test * --clobber --repo $OWNER/$REPO
+    - name: Check mip binaries version
+      id: mipsdk_version_id
+      run: |
+        echo "1.2.3" > version.txt
+        mipsdk_version=$(cat version.txt)
+        echo "mipsdk_version=${mipsdk_version}" >> "$GITHUB_OUTPUT"
+
+    - name: Create release without assets
+      run: |
+        ls -la
+        gh release create "$REPO_TAG" --notes "$RELEASE_NOTES" --title "$RELEASE_TITLE"
       env:
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-    
+          REPO_TAG: mip-${{ steps.mipsdk_version_id.outputs.mipsdk_version }}
+          RELEASE_NOTES: "Microsoft Information Protection (MIP) Software Development Kit (SDK) binaries from ${{ github.event.inputs.mipsdkbins_url }}. Release history and support policy can be found at https://learn.microsoft.com/en-us/information-protection/develop/version-release-history"
+          RELEASE_TITLE: "MIP SDK ${{ steps.mipsdk_version_id.outputs.mipsdk_version }}"
+          GH_TOKEN: ${{ github.token }}
 
+    - name: Download mip sdk binaries
+      run: |
+        mkdir $build_dir
+        echo "mipsdk1" > $build_dir/test1.txt
+        echo "mipsdk2" > $build_dir/test2.txt
+
+    - name: Upload assets to release
+      run: gh release upload $REPO_TAG $build_dir/* --clobber
+      env:
+          REPO_TAG: mip-${{ steps.mipsdk_version_id.outputs.mipsdk_version }}
+          GH_TOKEN: ${{ github.token }}
