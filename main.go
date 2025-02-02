@@ -185,7 +185,7 @@ func main() {
 		app.errorLog.Fatal(err)
 	}
 
-	err = os.MkdirAll(downloadDir, 0660)
+	err = os.MkdirAll(downloadDir, 0755)
 	if err != nil {
 		app.errorLog.Fatal(err)
 	}
