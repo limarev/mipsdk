@@ -171,7 +171,7 @@ func dumpVersion(downloadDir string, version string) (string, error) {
 func main() {
 	dir := flag.String("dir", ".", "download dir")
 	url := flag.String("url", "https://aka.ms/mipsdkbins", "url for scraping")
-	timeout := flag.Int("timeout", 600, "file downloading timeout in seconds")
+	timeout := flag.Int("timeout", 600, "downloading timeout per file in seconds")
 	isVersionOnlyMode := flag.Bool("version-only", false, "no downloading actually happens, returns mipsdk binaries version if found")
 	flag.Parse()
 
@@ -190,11 +190,11 @@ func main() {
 		app.errorLog.Fatal(err)
 	}
 
-	app.infoLog.Printf("Version only mode: %v", *isVersionOnlyMode)
+	app.infoLog.Printf("version only mode: %v", *isVersionOnlyMode)
 	app.infoLog.Printf("download dir: %v", downloadDir)
 	app.infoLog.Printf("url for scraping: %s", *url)
 	if !*isVersionOnlyMode {
-		app.infoLog.Printf("file downloading timeout in seconds: %v", *timeout)
+		app.infoLog.Printf("downloading timeout per file in seconds: %v", *timeout)
 	}
 
 	files, err := app.Scrape(*url)
@@ -207,6 +207,10 @@ func main() {
 		version = files[0].Version
 	}
 	app.infoLog.Printf("Data scraping is successful. MIP SDK binaries version %s. Found %v items", version, len(files))
+
+	for i, file := range files {
+		app.infoLog.Printf("%s (%v out of %v items)", file.Url, i+1, len(files))
+	}
 
 	if *isVersionOnlyMode {
 		versionPath, err := dumpVersion(downloadDir, version)
