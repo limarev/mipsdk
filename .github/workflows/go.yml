@@ -31,7 +31,7 @@ jobs:
     - name: Check mip binaries version
       id: mipsdk_version_id
       run: |
-        echo "1.2.3" > version.txt
+        ./mipsdk-scraper -version-only -url ${{ github.event.inputs.mipsdkbins_url }}
         mipsdk_version=$(cat version.txt)
         echo "mipsdk_version=${mipsdk_version}" >> "$GITHUB_OUTPUT"
 
@@ -44,10 +44,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
     - name: Download mip sdk binaries
-      run: |
-        mkdir $build_dir
-        echo "mipsdk1" > $build_dir/test1.txt
-        echo "mipsdk2" > $build_dir/test2.txt
+      run: ./mipsdk-scraper -url ${{ github.event.inputs.mipsdkbins_url }} -dir $build_dir
 
     - name: Upload assets to release
       run: gh release upload $REPO_TAG $build_dir/* --clobber
