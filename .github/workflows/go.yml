@@ -36,9 +36,7 @@ jobs:
         echo "mipsdk_version=${mipsdk_version}" >> "$GITHUB_OUTPUT"
 
     - name: Create release without assets
-      run: |
-        ls -la
-        gh release create "$REPO_TAG" --notes "$RELEASE_NOTES" --title "$RELEASE_TITLE"
+      run: gh release create $REPO_TAG --notes "$RELEASE_NOTES" --title "$RELEASE_TITLE"
       env:
           REPO_TAG: mip-${{ steps.mipsdk_version_id.outputs.mipsdk_version }}
           RELEASE_NOTES: "Microsoft Information Protection (MIP) Software Development Kit (SDK) binaries from ${{ github.event.inputs.mipsdkbins_url }}. Release history and support policy can be found at https://learn.microsoft.com/en-us/information-protection/develop/version-release-history"

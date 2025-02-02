@@ -172,6 +172,7 @@ func main() {
 	dir := flag.String("dir", ".", "download dir")
 	url := flag.String("url", "https://aka.ms/mipsdkbins", "url for scraping")
 	timeout := flag.Int("timeout", 600, "file downloading timeout in seconds")
+	isVersionOnlyMode := flag.Bool("version-only", false, "no downloading actually happens, returns mipsdk binaries version if found")
 	flag.Parse()
 
 	app := &application{
@@ -189,9 +190,12 @@ func main() {
 		app.errorLog.Fatal(err)
 	}
 
+	app.infoLog.Printf("Version only mode: %v", *isVersionOnlyMode)
 	app.infoLog.Printf("download dir: %v", downloadDir)
 	app.infoLog.Printf("url for scraping: %s", *url)
-	app.infoLog.Printf("file downloading timeout in seconds: %v", *timeout)
+	if !*isVersionOnlyMode {
+		app.infoLog.Printf("file downloading timeout in seconds: %v", *timeout)
+	}
 
 	files, err := app.Scrape(*url)
 	if err != nil {
@@ -204,19 +208,21 @@ func main() {
 	}
 	app.infoLog.Printf("Data scraping is successful. MIP SDK binaries version %s. Found %v items", version, len(files))
 
-	results := make(chan File, len(files))
-	errors := make(chan error, len(files))
+	if *isVersionOnlyMode {
+		versionPath, err := dumpVersion(downloadDir, version)
+		if err != nil {
+			app.errorLog.Fatal(err)
+		}
 
-	for _, file := range files {
-		go file.download(results, errors, time.Duration(*timeout)*time.Second)
+		app.infoLog.Printf("%s is created successfully", versionPath)
+	} else {
+		results := make(chan File, len(files))
+		errors := make(chan error, len(files))
+
+		for _, file := range files {
+			go file.download(results, errors, time.Duration(*timeout)*time.Second)
+		}
+
+		app.dumpFiles(results, errors, downloadDir, files)
 	}
-
-	app.dumpFiles(results, errors, downloadDir, files)
-
-	versionPath, err := dumpVersion(downloadDir, version)
-	if err != nil {
-		app.errorLog.Fatal(err)
-	}
-
-	app.infoLog.Printf("%s is created successfully", versionPath)
 }
